@@ -317,7 +317,7 @@ def get_all_hot_windows(wsoi, rsoi, img, svm, scalar, viz=False):
             for window in windows:
                 cv2.rectangle(roi, tuple(window[0]), tuple(window[1]), (0,1,0), thickness=3)
             font = cv2.FONT_HERSHEY_SIMPLEX
-            cv2.putText(roi, "Region of Interest: {}".format(woi['name']), (20, 20), font, 0.5,
+            cv2.putText(roi, "Region of Interest: {}".format(woi['name']), (10, 10), font, 0.5,
                         (1, 1, 1), 1)
             plt.imsave("output_images/windows_found_{}.jpg".format(woi['name']), roi)
 
@@ -403,7 +403,6 @@ def find_previous_bbox(prev_bboxes, bbox):
     """Check if the bbox has a similar bbox in the prev_bboxes list. If so return that
     """
     for p_bbox in prev_bboxes:
-        print(p_bbox)
         distance_1 = math.hypot(p_bbox[0][0]-bbox[0][0], p_bbox[0][1]-bbox[0][1])
         distance_2 = math.hypot(p_bbox[1][0]-bbox[1][0], p_bbox[1][1]-bbox[1][1])
         if distance_1 < 30 and distance_2 < 30:
@@ -594,8 +593,8 @@ wsoi = [
     'name': 'midway-far',
     'y_start': 380,
     'y_end':  530,
-    'x_start': 200,
-    'x_end':  1080,
+    'x_start': 100,
+    'x_end':  1180,
     'scale': 0.9,
     'pixels_per_step': 16,
     'window': (64, 64),   # (wxh)
