@@ -5,7 +5,7 @@
 Overview - Udacity Self Driving Car Term 1 Project 5
 ----------------------------------------------------
 
-![heatmap](output_images/heat_map_test1.jpg)
+![heatmap](output_images/heatmap_test1.jpg)
 
 The goal is to identify cars from a video taken from the dashboard of a car driving on the car. 
 Detecting other vehicles is extermely important for self driving cars as it the only way a self driven car can avoid collisions.
