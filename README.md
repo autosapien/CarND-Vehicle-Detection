@@ -2,32 +2,245 @@
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
 
-In this project, your goal is to write a software pipeline to detect vehicles in a video (start with the test_video.mp4 and later implement on full project_video.mp4), but the main output or product we want you to create is a detailed writeup of the project.  Check out the [writeup template](https://github.com/udacity/CarND-Vehicle-Detection/blob/master/writeup_template.md) for this project and use it as a starting point for creating your own writeup.  
+Overview - Udacity Self Driving Car Term 1 Project 5
+----------------------------------------------------
 
-Creating a great writeup:
----
-A great writeup should include the rubric points as well as your description of how you addressed each point.  You should include a detailed description of the code used in each step (with line-number references and code snippets where necessary), and links to other supporting documents or external references.  You should include images in your writeup to demonstrate how your code works with examples.  
+![heatmap](./output_images/heat_map_test1.jpg)
 
-All that said, please be concise!  We're not looking for you to write a book here, just a brief description of how you passed each rubric point, and references to the relevant code :). 
+The goal is to identify cars from a video taken from the dashboard of a car driving on the car. 
+Detecting other vehicles is extermely important for self driving cars as it the only way a self driven car can avoid collisions.
 
-You can submit your writeup in markdown or use another method and submit a pdf instead.
 
-The Project
----
+* Training Data
+* Training a Classifier
+* Detecting Cars
+* Estimating Bounding Boxes for the Detected Cars
+* Reducing Jitter
+* Output
+* Discussion
 
-The goals / steps of this project are the following:
+ 
+## Training Data
 
-* Perform a Histogram of Oriented Gradients (HOG) feature extraction on a labeled training set of images and train a classifier Linear SVM classifier
-* Optionally, you can also apply a color transform and append binned color features, as well as histograms of color, to your HOG feature vector. 
-* Note: for those first two steps don't forget to normalize your features and randomize a selection for training and testing.
-* Implement a sliding-window technique and use your trained classifier to search for vehicles in images.
-* Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
-* Estimate a bounding box for vehicles detected.
+### Source
+Here are links to the labeled data for [vehicles](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/vehicles.zip) 
+and [non-vehicles](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/non-vehicles.zip) examples used in the projec to the classifier. 
+These example images come from a combination of the [GTI vehicle image database](http://www.gti.ssr.upm.es/data/Vehicle_database.html), 
+the [KITTI vision benchmark suite](http://www.cvlibs.net/datasets/kitti/), and examples extracted from the project video itself.  
 
-Here are links to the labeled data for [vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/vehicles.zip) and [non-vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/non-vehicles.zip) examples to train your classifier.  These example images come from a combination of the [GTI vehicle image database](http://www.gti.ssr.upm.es/data/Vehicle_database.html), the [KITTI vision benchmark suite](http://www.cvlibs.net/datasets/kitti/), and examples extracted from the project video itself.   You are welcome and encouraged to take advantage of the recently released [Udacity labeled dataset](https://github.com/udacity/self-driving-car/tree/master/annotations) to augment your training data.  
+The training data must be downloaded and added to the `/data` directory
 
-Some example images for testing your pipeline on single frames are located in the `test_images` folder.  To help the reviewer examine your work, please save examples of the output from each stage of your pipeline in the folder called `ouput_images`, and include them in your writeup for the project by describing what each image shows.    The video called `project_video.mp4` is the video your pipeline should work well on.  
+There are some example images for test int he `/test_images` directory
 
-**As an optional challenge** Once you have a working pipeline for vehicle detection, add in your lane-finding algorithm from the last project to do simultaneous lane-finding and vehicle detection!
+The test results (at various stages of the pipeline development) are stored in the `/output_images` directory
 
-**If you're feeling ambitious** (also totally optional though), don't stop there!  We encourage you to go out and take video of your own, and show us how you would implement this project on a new video!
+### Loading the Data
+
+The data is first loaded and we notice that we have a balanced dataset for vehicles and non vehicles 
+```
+Number of car images:  8792
+Number of not-car images:  8968
+Size (w x h) of a car image :  (64, 64)
+Size (w x h) of a not-car image:  (64, 64)
+```
+We examine a few images from both sets
+
+![sample images](output_images/sample.jpg)
+
+### Examining the HOG Feature Extraction of the Data
+ 
+HOG features are extracted with `9 orientations, 8 pixels per cell and 2 cells per block` for channel 0 in the LUV colorspace.
+
+![hsv hog features](output_images/hog_features.jpg)
+
+Clearly we can see that a car has a horizontal top and bottom with some vertical orientations on the side. 
+At times the number plate and windshield are also identifiable in the hog image.
+The non car images have random and more empty hog features.
+
+## Training a Classifier
+
+We train a classifier to predict if a given 64x64 image is a car or a not-car. The 64x64 size is used as images in our training data are 64x64. 
+The goal is to get the classifier to predict as accurately as possible. 
+The input feature vector supplied to the classifier for training is iteratively altered to find one that trains to a high (~99%) level of accuracy.
+The input to the classifier is normalized as it may contain multiple features concatenated together.
+
+![normalized feature vector](output_images/normalized_feature_vector.jpg)
+
+The first 3072 inputs are from the spacial_features. The image array (64x64x3) is flattened into a 1d vector.
+The next 96 inputs are the histogram of TODO  
+
+
+The classification steps can be seen in `detect-vehicles.py` on lines TODO. The output from the classification step looks like
+```
+Feature vector length: 1764
+0.28 Seconds to train SVC...
+Test Accuracy of SVC =  0.9866
+```
+
+Once the classifier has been trained well its data is saved to disk and can be reloaded when needed.
+```
+if classify:
+   ...
+   joblib.dump(svc, 'svc_classifier.pkl')
+else:
+    svc = joblib.load('svc_classifier.pkl')
+```
+
+Now that we have have a classifier that, given a 64x64 image, can say if that is a car or not we can examine the view from the windshield and try and identify where the cars are on the road.
+
+## Detecting Cars
+
+### Sliding Windows 
+The view of the road can be broken down into blocks of 64x64 and we can slide a window through these blocks to locate cars with the classifier we just trained. 
+
+### Scaling to Find Larger or Smaller Cars
+We know that cars nearer to point of view will appear large and the cars out near the horizon appear small. 
+The input image can be scaled and our sliding window will effectively find inputs similar to our training data (64x64)
+We run every input image at four scales.
+
+### Regions of Interest
+We know that cars drive on the road and are not to be seen on trees and the in the sky (at least not yet!)
+Thus we can define our regions of interest for the four different areas on the road (near, midway-near, midway-far and far)
+
+![rois](output_images/rois.jpg)
+
+Each region of interest is scaled so that the car meant to be identified in that region 
+(note that cars my appear in multiple regions but they are best identified in a particular one) 
+is about the size of the car that was used for training in a 64 x 64 image.
+Windows slide across each region identifying cars using the classifier we trained. 
+
+![windows grid](output_images/windows_grid.jpg)
+  
+Let us take an example of a car that is not near and not far from the point of view and see how it is identified in the various
+regions of interest.
+
+![near](output_images/windows_found_near.jpg)
+![midway-near](output_images/windows_found_midway-near.jpg)
+![midway-far](output_images/windows_found_midway-far.jpg)
+![far](output_images/windows_found_far.jpg)
+
+The car is detected in the midway ROIs as one would expect, it is not detected in the near and far ROIs.
+Our intuition of using different ROIs holds good.
+After combining the ROIs we get
+
+![test9](output_images/windows_annotated_test9.jpg)
+
+Multiple cars are identified well too
+
+![test4](output_images/windows_annotated_test4.jpg)
+
+The method that collects all the windows where cars are identified from all the ROIs is `get_all_hot_windows`.
+`get_all_hot_windows()` calls the `get_hot_windows` method where the detection of cars is done.
+`get_hot_windows()` computes the steps for the windows and for each step it extracts the features for the window and then
+normalizes the feature vector. This is followed by making a prediction if there is a car in the image or not.
+
+```
+def get_hot_windows(woi, roi, svm, scaler):
+    w_h = woi['window'][0]
+    w_w = woi['window'][1]
+    hot_windows = []
+    steps_y, steps_x = get_window_steps(img_height=roi.shape[0], window_height=w_h,
+                                        img_width=roi.shape[1], window_width=w_w,
+                                        pixels_per_step=woi['pixels_per_step'])
+    for step_x in steps_x:
+        for step_y in steps_y:
+            img_to_test = roi[step_y:step_y+w_h, step_x:step_x+w_w]
+            features = extract_features_single(img_to_test, color_space=colorspace, orient=orient,
+                                               pix_per_cell=pix_per_cell, cell_per_block=cell_per_block,
+                                               hist_feat=True, spatial_feat=True, hog_channel=hog_channel)
+            test_features = scaler.transform(np.array(features).reshape(1, -1))
+            prediction = svm.predict(test_features)
+            if prediction == 1:
+                hot_windows.append(((step_x, step_y), (step_x+w_w, step_y+w_h)))
+    return np.asarray(hot_windows)
+``` 
+
+## Estimating Bounding Boxes for the Detected Cars
+
+A Car is found by multiple windows in a single Region of Interest. Additionally, it is also found in multiple Regions of Interest
+
+![test 1](output_images/windows_annotated_test1.jpg)
+![test 6](output_images/windows_annotated_test6.jpg)
+![test 7](output_images/windows_annotated_test7.jpg)
+
+To group the multiple identifications of a car a heatmap is used. A heat map simply takes an empty image (all zeros) and adds a 1 for every pixel where the car is identified.
+This is implemented in the method `add_heat`
+
+```
+def add_heat(black, windows):
+    # Iterate through list of windows and add heat to each pixel in the window
+    for window in windows:
+        black[window[0][1]:window[1][1], window[0][0]:window[1][0]] += 1
+    return black
+```
+    
+In addition to the cars we also find many False Positives. In order to reduce false positives we follow two approaches. 
+We apply a threshold function to the heat map. Cars are identified by multiple windows whereas the false
+positive only have a few votes.
+  
+```
+ def apply_heat_threshold(heatmap, threshold):
+    # Zero out pixels below the threshold
+    heatmap[heatmap <= threshold] = 0
+    return heatmap
+```
+
+One can see using the threshold a number of false positives are removed
+
+![heatmap](output_images/heatmap.jpg)
+
+We also maintain a history of centroids of the detected cars. Only if a car centroid appears within 30 pixels in more than 3 out of 5 previous frames is it 
+drawn on the image. This helps reduce false positives considerably. This is implemented in the `draw_bboxes` method. 
+A list of scores is maintained for every bbox that is to be drawn 
+
+```
+# look back 5 frames
+    for centroids_frame in centroids_history:
+        for i, bbox in enumerate(bboxes_requested):  # iterate over each bbox that is requested to be drawn
+            bbox = np.asarray(bbox)
+            bbox_centeroid = centeroid(bbox)
+            if len(centroids_frame) > 0:     # only if we have data in the centroids frame should we compute the scores
+                distances_to_centroids = np.sqrt(np.sum(np.square(centroids_frame - bbox_centeroid), axis=1))
+                if np.min(distances_to_centroids) < 30:  # max 30 pixels away from previous centroid
+                    bboxes_scores[i] += 1
+```
+
+Only if the the score is greater than 3 we draw the bbox, again from the `draw_bboxes` method
+```
+if bboxes_scores[i] >= 3:   # only accept bbox if 3+ out of 5 votes from previous frames
+    ...
+    cv2.rectangle(cp, tuple(bbox[0]), tuple(bbox[1]), (0, 1, 0), thickness=3)
+```                
+                    
+
+## Reducing Jitter of the Bounding Box
+
+In order to reduce the jitter the bounding boxes around the cars the bounding boxes from the previous frame are maintained. 
+While drawing the bounding box on the current frame, the same box from the previous frame is found (in `find_previous_bbox` and a low pass filter applied. 
+This is done by the `low_pass_filter` method.
+
+```
+def low_pass_filter(bbox, prev_bbox, alpha=0.6):
+    return (bbox*alpha + (1-alpha)*prev_bbox).astype(np.int)
+```    
+ 
+## Output
+ 
+The final video with the cars annotated can be [found here](processed_project_video,mp6) 
+
+## Discussion
+
+- We could extract the HOG features for the whole source image at once do and then slide windows over it to improve efficiency.
+- Significant improvements in identifying vehicles can be made if we know that the road is curving right or left. 
+The region of interest can modified based on the curvature of the road. This would lead to reduced sizes of ROIs and 
+it would handle the identification of cars across the divider. 
+This solution already provides support for x axis cropping in the ROIs
+- This solution does not suffer from false positives but these can be further reduced by increasing the number of frames 
+where the centroid history is stored. We are using 5 (with 3+ votes) here, using 10 (with 6+ votes) should solve this problem 
+as false positives show up for only a few frames
+- Once the centroid on a car is found we could get a much better bound on the car by finding its color and then looking for a 
+bounding box with that color and saturation (cars tend to have high saturation as they are painted)
+- This method may not work realtime input as it handles about 1 frame per second. We would need to optimize the performance to get at least
+16 frames / sec to be able to handle realtime data.
+- It would be interesting to compare a deep learning approach with this approach. The deep learning approach may take longer to 
+train but should be considerably faster on detecting images,
