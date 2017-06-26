@@ -7,9 +7,10 @@ Overview - Udacity Self Driving Car Term 1 Project 5
 
 ![heatmap](output_images/heatmap_test1.jpg)
 
-The goal is to identify cars from a video taken from the dashboard of a car driving on the car. 
-Detecting other vehicles is extermely important for self driving cars as it the only way a self driven car can avoid collisions.
+The goal is to identify cars from a video taken from the dashboard of a car driving on the road. 
+Detecting other vehicles is extremely important for self driving cars as it the only way a self driven car can avoid collisions.
 
+The project is divided into the following sections:
 
 * Training Data
 * Training a Classifier
@@ -30,7 +31,7 @@ the [KITTI vision benchmark suite](http://www.cvlibs.net/datasets/kitti/), and e
 
 The training data must be downloaded and added to the `/data` directory
 
-There are some example images for test int he `/test_images` directory
+There are some example images for test in the `/test_images` directory
 
 The test results (at various stages of the pipeline development) are stored in the `/output_images` directory
 
@@ -62,7 +63,7 @@ The non car images have random and more empty hog features.
 We train a classifier to predict if a given 64x64 image is a car or a not-car. The 64x64 size is used as images in our training data are 64x64. 
 The goal is to get the classifier to predict as accurately as possible. 
 The input feature vector supplied to the classifier for training is iteratively altered to find one that trains to a high (~99%) level of accuracy.
-The input to the classifier is normalized as it may contain multiple features concatenated together.
+The input to the classifier is normalized as it may contain multiple features of different magnitudes concatenated together.
 
 ![normalized feature vector](output_images/normalized_feature_vector.jpg)
 
@@ -72,7 +73,7 @@ The next 96 inputs are the histogram of TODO
 
 The classification steps can be seen in `detect-vehicles.py` on lines TODO. The output from the classification step looks like
 ```
-Feature vector length: 1764
+Feature vector length: TOOD
 0.28 Seconds to train SVC...
 Test Accuracy of SVC =  0.9866
 ```
@@ -86,7 +87,7 @@ else:
     svc = joblib.load('svc_classifier.pkl')
 ```
 
-Now that we have have a classifier that, given a 64x64 image, can say if that is a car or not we can examine the view from the windshield and try and identify where the cars are on the road.
+Now that we have have a classifier that, given a 64x64 image, can predict if that is a car or not. Now we can examine the view from the dashboard and try to detect the cars on the road.
 
 ## Detecting Cars
 
@@ -160,8 +161,6 @@ def get_hot_windows(woi, roi, svm, scaler):
 A Car is found by multiple windows in a single Region of Interest. Additionally, it is also found in multiple Regions of Interest
 
 ![test 1](output_images/windows_annotated_test1.jpg)
-![test 6](output_images/windows_annotated_test6.jpg)
-![test 7](output_images/windows_annotated_test7.jpg)
 
 To group the multiple identifications of a car a heatmap is used. A heat map simply takes an empty image (all zeros) and adds a 1 for every pixel where the car is identified.
 This is implemented in the method `add_heat`
@@ -187,10 +186,10 @@ positive only have a few votes.
 
 One can see using the threshold a number of false positives are removed
 
-![heatmap](output_images/heatmap.jpg)
+![heatmap](output_images/heatmap_test1.jpg)
 
-We also maintain a history of centroids of the detected cars. Only if a car centroid appears within 30 pixels in more than 3 out of 5 previous frames is it 
-drawn on the image. This helps reduce false positives considerably. This is implemented in the `draw_bboxes` method. 
+To further reduce the false positives we also maintain a history of centroids of the detected cars. Only if a car centroid appears within 30 pixels in more than 3 out of 5 previous frames is it 
+drawn on the image. As false positives appear only for a frame or two in the video this helps reduce false positives considerably. This is implemented in the `draw_bboxes` method. 
 A list of scores is maintained for every bbox that is to be drawn 
 
 ```
