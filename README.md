@@ -62,17 +62,17 @@ HOG features are extracted with `9 orientations, 8 pixels per cell and 2 cells p
 
 ![hsv hog features](output_images/hog_features.jpg)
 
-Clearly we can see that a car has a horizontal top and bottom with some vertical orientations on the side. 
-At times the number plate and windshield are also identifiable in the hog image.
-The non car images have random and more empty histogram of gradients.
+Using this configuration we can see that a car has a horizontal top and bottom with some vertical orientations on the side. 
+At times the read windshield and boot are also identifiable in the hog image.
+The non car images are random and more empty.
   
 ### Feature Vector
 
 In addition to using HOG we also use the spacial and histogram of color features. The feature vector used has a length of 4932.
 
 The first 3072 inputs are from the spacial features. The image array (64x64x3) is flattened into a 1d vector and used as an input.
-The next 96 inputs are the histogram of colors, we TODO 
-The next 1764 inputs are the histogram of gradients (or HOG)
+The next 96 inputs are the histogram of colors. Histograms of each RGB channel is taken into 32 bins thus making 96 inputs. 
+The next 1764 inputs are the histogram of gradients (or HOG) as described above.
 
 ### Normalization
 
@@ -86,7 +86,7 @@ scaled_X = scaler.transform(X)
 
 It is important to note that when detecting cars we need to again use the same normalized vector with the features in the correct order to get the right predictions.
 
-The scaler need not be computed on everytime the detection is done. Once the input set and feature vector are finalized the scalar can be saved to disk and reloaded when needed
+The scaler need not be computed on every time the detection is done. Once the input is set and feature vector finalized the scalar can be saved to disk and reloaded when needed.
 
 ```
 if classify:
