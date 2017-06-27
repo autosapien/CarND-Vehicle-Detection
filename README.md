@@ -49,16 +49,6 @@ We examine a few images from both sets
 
 ![sample images](output_images/sample.jpg)
 
-### Examining the HOG Feature Extraction of the Data
- 
-HOG features are extracted with `9 orientations, 8 pixels per cell and 2 cells per block` for channel 0 in the LUV colorspace.
-
-![hsv hog features](output_images/hog_features.jpg)
-
-Clearly we can see that a car has a horizontal top and bottom with some vertical orientations on the side. 
-At times the number plate and windshield are also identifiable in the hog image.
-The non car images have random and more empty hog features.
-
 ## Training a Classifier
 
 We train a classifier to predict if a given 64x64 image is a car or a not-car. The 64x64 size is used as images in our training data are 64x64. 
@@ -66,13 +56,68 @@ The goal is to get the classifier to predict as accurately as possible.
 The input feature vector supplied to the classifier for training is iteratively altered to find one that trains to a high (~99%) level of accuracy.
 The input to the classifier is normalized as it may contain multiple features of different magnitudes concatenated together.
 
-![normalized feature vector](output_images/normalized_feature_vector.jpg)
+### HOG Features
+ 
+HOG features are extracted with `9 orientations, 8 pixels per cell and 2 cells per block` for channel 0 in the LUV colorspace.
+
+![hsv hog features](output_images/hog_features.jpg)
+
+Clearly we can see that a car has a horizontal top and bottom with some vertical orientations on the side. 
+At times the number plate and windshield are also identifiable in the hog image.
+The non car images have random and more empty.
+
+### Other Features
+
+In addition to using HOG we also use the spacial and histogram of color features. 
+ 
+ 
+### Feature Vector
 
 The first 3072 inputs are from the spacial_features. The image array (64x64x3) is flattened into a 1d vector.
 The next 96 inputs are the histogram of TODO  
 
 
-The classification steps can be seen in `detect-vehicles.py` on lines TODO. The output from the classification step looks like
+### Normalization
+
+During the training phase the `StandardScaler` from `sklearn.preprocessing` is used to normalize the feature vectors.
+
+```
+# Normalize the feature vectors
+scaler = StandardScaler().fit(X)
+scaled_X = scaler.transform(X)
+```
+
+It is important to note that when detecting cars we need to again use the same normalized to get the right predictions.
+
+The scaler need not be computed on everytime the detection is done. Once the input set and feature vector are finalized the scalar can be saved to disk and reloaded when needed
+
+```
+if classify:
+    ...
+    joblib.dump(scaler, 'scalar_classifier.pkl')
+else:
+    scaler = joblib.load('scalar_classifier.pkl')
+```
+
+### Classification
+
+The training data is split into two sets, with 20% going into the validation set (X_text, y_test here)
+
+```
+# Split data into randomized training and test sets
+rand_state = np.random.randint(0, 100)
+X_train, X_test, y_train, y_test = train_test_split(scaled_X, y, test_size=0.2, random_state=rand_state)
+```
+
+The classifier used is a Support Vectory Machine `LinearSVC` from `sklearn.svm`
+
+```
+# Use a linear SVC to train a classifier
+svc = LinearSVC()
+svc.fit(X_train, y_train)
+```
+ 
+The output from the classification step looks like
 ```
 Feature vector length: TOOD
 0.28 Seconds to train SVC...
@@ -88,7 +133,7 @@ else:
     svc = joblib.load('svc_classifier.pkl')
 ```
 
-Now that we have have a classifier that, given a 64x64 image, can predict if that is a car or not. Now we can examine the view from the dashboard and try to detect the cars on the road.
+Now that we have have a classifier that, given a 64x64 image, can predict if that is a car or not. We examine the view from the dashboard and try to detect the cars on the road.
 
 ## Detecting Cars
 
