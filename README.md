@@ -68,9 +68,9 @@ The non car images are random and more empty.
   
 ### Feature Vector
 
-In addition to using HOG we also use the spacial and histogram of color features. The feature vector used has a length of 4932.
+In addition to using HOG we also use the spacial and histogram of color features. The feature vector used has a length of 2628.
 
-The first 3072 inputs are from the spacial features. The image array (64x64x3) is flattened into a 1d vector and used as an input.
+The first 768 inputs are from the spacial features. The image array (16x16x3) is flattened into a 1d vector and used as an input.
 The next 96 inputs are the histogram of colors. Histograms of each RGB channel is taken into 32 bins thus making 96 inputs. 
 The next 1764 inputs are the histogram of gradients (or HOG) as described above.
 
@@ -242,12 +242,12 @@ One can see using the threshold a number of false positives are removed.
 
 ![heatmap](output_images/heatmap_test1.jpg)
 
-To further reduce the false positives we also maintain a history of centroids of the detected cars. Only if a car centroid appears within 30 pixels in more than 3 out of 5 previous frames is it 
+To further reduce the false positives we also maintain a history of centroids of the detected cars. Only if a car centroid appears within 30 pixels in more than 4 out of 6 previous frames is it 
 drawn on the image. As false positives appear only for a frame or two in the video this helps reduce false positives considerably. This is implemented in the `draw_bboxes` method. 
 A list of scores is maintained for every bbox that is to be drawn 
 
 ```
-# look back 5 frames
+# look back 6 frames
     for centroids_frame in centroids_history:
         for i, bbox in enumerate(bboxes_requested):  # iterate over each bbox that is requested to be drawn
             bbox = np.asarray(bbox)
@@ -258,9 +258,9 @@ A list of scores is maintained for every bbox that is to be drawn
                     bboxes_scores[i] += 1
 ```
 
-Only if the the score is greater than 3 we draw the bbox, again from the `draw_bboxes` method
+Only if the the score is greater than 4 we draw the bbox, again from the `draw_bboxes` method
 ```
-if bboxes_scores[i] >= 3:   # only accept bbox if 3+ out of 5 votes from previous frames
+if bboxes_scores[i] >= 4:   # only accept bbox if 4+ out of 6 votes from previous frames
     ...
     cv2.rectangle(cp, tuple(bbox[0]), tuple(bbox[1]), (0, 1, 0), thickness=3)
 ```                
@@ -289,8 +289,10 @@ The region of interest can be modified based on this curvature. This would lead 
 it would also handle the identification of cars across the divider. 
 Our solution already provides support for x axis cropping in the ROIs.
 - Our solution does not suffer from false positives but these can be further reduced by increasing the number of frames 
-where the centroid history is stored. We are using 5 (with 3+ votes) here. Wsing 10 (with 6+ votes) should solve this problem 
+where the centroid history is stored. We are using 6 (with 4+ votes) here. Using 10 (with 6+ votes) should solve this problem 
 as false positives show up for only a few frames.
+- The classifier has an accuracy of 98.3%, if a better classifier can be built (using more data / better image features) then the 
+false positives can be reduced further.
 - Once the centroid on a car is found we could get a much better bound on the car by finding its color and then looking for a 
 bounding box with that color and saturation (cars tend to have high saturation as they are painted)
 - This method may not work realtime input as it handles about 1 frame per second. We would need to optimize the performance to get at least

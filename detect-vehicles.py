@@ -354,20 +354,20 @@ def centeroid(arr):
 
 
 def draw_bboxes(img, bboxes_requested, centroids_history, prev_bboxes):
-    """ Draw bounding boxes on img. Use distance between bboxes centroids and centroids from past 5 frames to reject
-    bboxes that do not get 3 out 5 votes (from the previous 5 frames)
+    """ Draw bounding boxes on img. Use distance between bboxes centroids and centroids from past 6 frames to reject
+    bboxes that do not get 4 out 6 votes (from the previous 6 frames)
     """
 
     # centroids of bboxes requested to be drawn
     centroids = np.asarray([centeroid(np.asarray(bbox)) for bbox in bboxes_requested])
 
-    # scores of the bboxes that are requested to be drawn, draw only if score > 3
+    # scores of the bboxes that are requested to be drawn, draw only if score > 4
     bboxes_scores = np.zeros(len(bboxes_requested))
 
     # list of bboxes that are drawn
     bboxes_drawn = []
 
-    # look back 5 frames
+    # look back 6 frames
     for centroids_frame in centroids_history:
         for i, bbox in enumerate(bboxes_requested):  # iterate over each bbox that is requested to be drawn
             bbox = np.asarray(bbox)
@@ -387,14 +387,14 @@ def draw_bboxes(img, bboxes_requested, centroids_history, prev_bboxes):
             cv2.rectangle(cp, tuple(bbox[0]), tuple(bbox[1]), (0, 1, 0), thickness=3)
             bboxes_drawn.append(bbox)
         else:
-            if bboxes_scores[i] >= 4:   # only accept bbox if 3+ out of 5 votes from previous frames
+            if bboxes_scores[i] >= 4:   # only accept bbox if 4+ out of 6 votes from previous frames
                 prev_bbox = find_previous_bbox(prev_bboxes, bbox)
                 if prev_bbox is not None:
                     bbox = low_pass_filter(np.asarray(bbox), np.asarray(prev_bbox), alpha=0.60)
                 cv2.rectangle(cp, tuple(bbox[0]), tuple(bbox[1]), (0, 1, 0), thickness=3)
                 print(centroids[i])
                 bboxes_drawn.append(bbox)
-            if bboxes_scores[i] < 4 :
+            if bboxes_scores[i] < 4:
                 print("score < 4 dropping bbox", centroids[i])
     centroids_history.append(centroids)
     prev_bboxes[:] = bboxes_drawn
