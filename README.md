@@ -158,13 +158,13 @@ Windows slide across each region identifying cars using the classifier we traine
 Let us take an example of a car that is not near and not far from the point of view and see how it is identified in the various
 regions of interest.
 
-![near](output_images/windows_found_near.jpg)
-![midway-near](output_images/windows_found_midway-near.jpg)
-![midway-far](output_images/windows_found_midway-far.jpg)
 ![far](output_images/windows_found_far.jpg)
+![midway-far](output_images/windows_found_midway-far.jpg)
+![midway-near](output_images/windows_found_midway-near.jpg)
+![near](output_images/windows_found_near.jpg)
 
-The car is detected in the midway ROIs as one would expect, it is not detected in the far ROI.
-Our intuition of using different ROIs holds good. In these frames there are quite a false positives, these are handled later.
+The car is detected in the midway ROIs as one would expect, it is not detected in the near ROI.
+Our intuition of using different ROIs holds good. In this frame there are quite a false positives, these are handled later.
 After combining the ROIs we get
 
 ![test9](output_images/windows_annotated_test9.jpg)
