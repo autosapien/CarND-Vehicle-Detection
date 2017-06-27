@@ -58,7 +58,7 @@ def color_hist(img, nbins=32, bins_range=(0, 256)):
 
 # Define a function to extract features from a list of images
 # Have this function call bin_spatial() and color_hist()
-def extract_features_single(image, color_space='RGB', spatial_size=(32, 32),
+def extract_features_single(image, color_space='RGB', spatial_size=(16, 16),
                             hist_bins=32, orient=9,
                             pix_per_cell=8, cell_per_block=2, hog_channel=0,
                             spatial_feat=False, hist_feat=False, hog_feat=True):
@@ -105,7 +105,7 @@ def extract_features_single(image, color_space='RGB', spatial_size=(32, 32),
 
 # Define a function to extract features from a list of images
 # Have this function call bin_spatial() and color_hist()
-def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
+def extract_features(imgs, color_space='RGB', spatial_size=(16, 16),
                      hist_bins=32, orient=9,
                      pix_per_cell=8, cell_per_block=2, hog_channel=0,
                      spatial_feat=False, hist_feat=False, hog_feat=True):
@@ -184,9 +184,15 @@ def extract_features_vis(imgs, cspace='RGB', orient=9,
         else:
             feature_image = np.copy(image)
 
-        # vis=True so that we get the image
-        _, visualization = get_hog_features(feature_image[:,:,hog_channel], orient,
-                                            pix_per_cell, cell_per_block, vis=True, feature_vec=True)
+        if hog_channel == 'ALL':
+            visualization = []
+            for channel in range(feature_image.shape[2]):
+                _, v = get_hog_features(feature_image[:, :, channel], orient,
+                                        pix_per_cell, cell_per_block, vis=True, feature_vec=True)
+                visualization.append(v)
+        else:
+            _, visualization = get_hog_features(feature_image[:,:,hog_channel], orient,
+                                                pix_per_cell, cell_per_block, vis=True, feature_vec=True)
         # Append the new visualization to the list
         visualizations.append(visualization)
     # Return list of visualizations
@@ -368,25 +374,28 @@ def draw_bboxes(img, bboxes_requested, centroids_history, prev_bboxes):
             bbox_centeroid = centeroid(bbox)
             if len(centroids_frame) > 0:     # only if we have data in the centroids frame should we compute the scores
                 distances_to_centroids = np.sqrt(np.sum(np.square(centroids_frame - bbox_centeroid), axis=1))
-                if np.min(distances_to_centroids) < 30:  # max 30 pixels away from previous centroid
+                if np.min(distances_to_centroids) < 60:  # max 50 pixels away from previous centroid
                     bboxes_scores[i] += 1
 
     cp = np.copy(img)
     for i, bbox in enumerate(bboxes_requested):
         bbox = np.asarray(bbox)
-        if len(centroids_history) < 5:  # no history so draw the boxes
+        if len(centroids_history) < 6:  # no history so draw the boxes
             prev_bbox = find_previous_bbox(prev_bboxes, bbox)
             if prev_bbox is not None:
                 bbox = low_pass_filter(np.asarray(bbox), np.asarray(prev_bbox), alpha=0.60)
             cv2.rectangle(cp, tuple(bbox[0]), tuple(bbox[1]), (0, 1, 0), thickness=3)
             bboxes_drawn.append(bbox)
         else:
-            if bboxes_scores[i] >= 3:   # only accept bbox if 3+ out of 5 votes from previous frames
+            if bboxes_scores[i] >= 4:   # only accept bbox if 3+ out of 5 votes from previous frames
                 prev_bbox = find_previous_bbox(prev_bboxes, bbox)
                 if prev_bbox is not None:
                     bbox = low_pass_filter(np.asarray(bbox), np.asarray(prev_bbox), alpha=0.60)
                 cv2.rectangle(cp, tuple(bbox[0]), tuple(bbox[1]), (0, 1, 0), thickness=3)
+                print(centroids[i])
                 bboxes_drawn.append(bbox)
+            if bboxes_scores[i] < 4 :
+                print("score < 4 dropping bbox", centroids[i])
     centroids_history.append(centroids)
     prev_bboxes[:] = bboxes_drawn
     return cp
@@ -411,10 +420,10 @@ def draw_car_annotations(img, windows, centroids_history=[], prev_bboxes=[], viz
     # Setup the heatmap for the windows
     heatmap = np.zeros_like(img[:, :, 0]).astype(np.float)
     heatmap = add_heat(black=heatmap, windows=windows)
-    heatmap = apply_heat_threshold(heatmap=heatmap, threshold=2)
+    heatmap = apply_heat_threshold(heatmap=heatmap, threshold=3)
 
     # Keep a copy of the centroids and bounding boxes
-    if len(centroids_history) > 5:
+    if len(centroids_history) > 6:
         centroids_history.pop(0)
 
     # Annotate the cars in the image
@@ -465,9 +474,9 @@ def annotate_cars(image):
 
 output_dir = '../output_images/'
 viz = True
-classify = True
+classify = False
 colorspace = 'LUV'
-hog_channel = 0  # 0,1,2
+hog_channel = 0  # 0,1,2,ALL
 orient = 9
 pix_per_cell = 8
 cell_per_block = 2
@@ -506,21 +515,27 @@ if viz:
 # Apply HOG for visualization
 if viz:
     num_to_viz = 3
-    f, axes = plt.subplots(2, 2*num_to_viz+2, figsize=(17, 5))  # 2 images add manually
+    f, axes = plt.subplots(2, 2*num_to_viz+2, figsize=(6, 10))  # 2 images add manually
     f.tight_layout()
     idx_c = np.random.randint(0, len(cars), size=num_to_viz)
     idx_nc = np.random.randint(0, len(notcars), size=num_to_viz)
     imgs = np.concatenate([['test_images/car1.jpg', 'test_images/car2.jpg'], cars[idx_c], notcars[idx_nc]])
-    imgs_h0 = extract_features_vis(imgs, cspace='LUV', orient=9,
-                                   pix_per_cell=8, cell_per_block=2, hog_channel=0)
+    imgs_hog = extract_features_vis(imgs, cspace=colorspace, orient=9,
+                                    pix_per_cell=8, cell_per_block=2, hog_channel=hog_channel)
     for i, img in enumerate(imgs):
         img_ = cv2.cvtColor(cv2.imread(img), cv2.COLOR_BGR2RGB)
         axes[0][i].set_title('Source Image', fontsize=8)
         axes[0][i].imshow(img_)
         axes[0][i].axis('off')
         axes[1][i].set_title('HOG LUV Channel 0', fontsize=8)
-        axes[1][i].imshow(imgs_h0[i])
+        axes[1][i].imshow(imgs_hog[i])
         axes[1][i].axis('off')
+        #axes[2][i].set_title('HOG LUV Channel 1', fontsize=8)
+        #axes[2][i].imshow(imgs_hog[i][1])
+        #axes[2][i].axis('off')
+        #axes[3][i].set_title('HOG LUV Channel 2', fontsize=8)
+        #axes[3][i].imshow(imgs_hog[i][2])
+        #axes[3][i].axis('off')
     plt.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.02)
     plt.subplots_adjust(hspace=.1, wspace=.05)
     f.savefig('output_images/hog_features.jpg')
@@ -561,8 +576,6 @@ if classify:
 else:
     svc = joblib.load('svc_classifier.pkl')
     scaler = joblib.load('scalar_classifier.pkl')
-    pass
-
 
 # Windows of interest
 wsoi = [
@@ -572,7 +585,7 @@ wsoi = [
     'y_end':  480,
     'x_start': 200,
     'x_end':  1080,
-    'scale': 1.1,
+    'scale': 1.05,
     'pixels_per_step': 16,
     'window': (64, 64),   # (wxh)
     'color': (0, 255, 0),
@@ -584,7 +597,7 @@ wsoi = [
     'y_end':  530,
     'x_start': 100,
     'x_end':  1180,
-    'scale': 0.9,
+    'scale': 0.85,
     'pixels_per_step': 16,
     'window': (64, 64),   # (wxh)
     'color': (0, 255, 0),
@@ -596,7 +609,7 @@ wsoi = [
     'y_end':  550,
     'x_start': 0,
     'x_end':  1280,
-    'scale': 0.7,
+    'scale': 0.65,
     'pixels_per_step': 16,
     'window': (64, 64),   # (wxh)
     'color': (0, 255, 0),
@@ -659,7 +672,7 @@ if viz:
     save_windows_on_image_to_file(windows, img5, "output_images/windows_annotated_test9.jpg")
 
 
-if not viz:
+if False:
     centroids_history = []
     prev_bboxes = []
     in_vid = 'project_video.mp4'

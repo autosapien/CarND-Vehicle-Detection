@@ -215,6 +215,16 @@ def add_heat(black, windows):
         black[window[0][1]:window[1][1], window[0][0]:window[1][0]] += 1
     return black
 ```
+
+
+We find multiple hot areas in the image. To separate these areas into individual groups we use the `lablel()` method provided by `scipy.ndimage.measurements`
+  
+```
+labels = msrmnts.label(heatmap)
+```
+
+labels is now tuple that contains the number of contiguous areas in the image. In each contiguous area the pixels are set to its index.
+For details see [here](https://docs.scipy.org/doc/scipy-0.16.0/reference/generated/scipy.ndimage.measurements.label.html)
     
 In addition to the cars we also find many False Positives. In order to reduce false positives we follow two approaches. 
 We apply a threshold function to the heat map. Generally, cars are identified by multiple windows whereas the false
