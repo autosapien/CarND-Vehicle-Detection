@@ -64,18 +64,15 @@ HOG features are extracted with `9 orientations, 8 pixels per cell and 2 cells p
 
 Clearly we can see that a car has a horizontal top and bottom with some vertical orientations on the side. 
 At times the number plate and windshield are also identifiable in the hog image.
-The non car images have random and more empty.
-
-### Other Features
-
-In addition to using HOG we also use the spacial and histogram of color features. 
- 
- 
+The non car images have random and more empty histogram of gradients.
+  
 ### Feature Vector
 
-The first 3072 inputs are from the spacial_features. The image array (64x64x3) is flattened into a 1d vector.
-The next 96 inputs are the histogram of TODO  
+In addition to using HOG we also use the spacial and histogram of color features. The feature vector used has a length of 4932.
 
+The first 3072 inputs are from the spacial features. The image array (64x64x3) is flattened into a 1d vector and used as an input.
+The next 96 inputs are the histogram of colors, we TODO 
+The next 1764 inputs are the histogram of gradients (or HOG)
 
 ### Normalization
 
@@ -87,7 +84,7 @@ scaler = StandardScaler().fit(X)
 scaled_X = scaler.transform(X)
 ```
 
-It is important to note that when detecting cars we need to again use the same normalized to get the right predictions.
+It is important to note that when detecting cars we need to again use the same normalized vector with the features in the correct order to get the right predictions.
 
 The scaler need not be computed on everytime the detection is done. Once the input set and feature vector are finalized the scalar can be saved to disk and reloaded when needed
 
@@ -109,7 +106,7 @@ rand_state = np.random.randint(0, 100)
 X_train, X_test, y_train, y_test = train_test_split(scaled_X, y, test_size=0.2, random_state=rand_state)
 ```
 
-The classifier used is a Support Vectory Machine `LinearSVC` from `sklearn.svm`
+The classifier used is a Support Vector Machine `LinearSVC` from `sklearn.svm`
 
 ```
 # Use a linear SVC to train a classifier
@@ -119,12 +116,12 @@ svc.fit(X_train, y_train)
  
 The output from the classification step looks like
 ```
-Feature vector length: TOOD
-0.28 Seconds to train SVC...
+Feature vector length: 4932
+27.22 Seconds to train SVC...
 Test Accuracy of SVC =  0.9866
 ```
 
-Once the classifier has been trained well its data is saved to disk and can be reloaded when needed.
+Once the classifier has been trained well, its data is saved to disk and can be reloaded when needed.
 ```
 if classify:
    ...
