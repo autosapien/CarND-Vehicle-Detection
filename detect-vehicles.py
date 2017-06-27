@@ -515,7 +515,7 @@ if viz:
 # Apply HOG for visualization
 if viz:
     num_to_viz = 3
-    f, axes = plt.subplots(2, 2*num_to_viz+2, figsize=(6, 10))  # 2 images add manually
+    f, axes = plt.subplots(2, 2*num_to_viz+2, figsize=(12, 4))  # 2 images add manually
     f.tight_layout()
     idx_c = np.random.randint(0, len(cars), size=num_to_viz)
     idx_nc = np.random.randint(0, len(notcars), size=num_to_viz)
