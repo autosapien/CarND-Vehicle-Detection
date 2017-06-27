@@ -279,7 +279,8 @@ def low_pass_filter(bbox, prev_bbox, alpha=0.6):
  
 ## Output
  
-The final video with the cars annotated can be [found here](processed_project_video,mp6) 
+The project video with the cars annotated can be [found here](processed_project_video,mp4) 
+The test video with the cars annotated can be [found here](processed_test_video,mp4)
 
 ## Discussion
 
