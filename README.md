@@ -169,7 +169,7 @@ After combining the ROIs we get
 
 ![test9](output_images/windows_annotated_test9.jpg)
 
-Multiple cars are identified well too
+Multiple cars are identified well.
 
 ![test4](output_images/windows_annotated_test4.jpg)
 
@@ -217,8 +217,9 @@ def add_heat(black, windows):
 ```
     
 In addition to the cars we also find many False Positives. In order to reduce false positives we follow two approaches. 
-We apply a threshold function to the heat map. Cars are identified by multiple windows whereas the false
-positive only have a few votes.
+We apply a threshold function to the heat map. Generally, cars are identified by multiple windows whereas the false
+positive have only a few votes. Thus we remove all detections with votes less than a threshold, 
+this removes some false positives while leaving the detected cars in place.
   
 ```
  def apply_heat_threshold(heatmap, threshold):
@@ -227,7 +228,7 @@ positive only have a few votes.
     return heatmap
 ```
 
-One can see using the threshold a number of false positives are removed
+One can see using the threshold a number of false positives are removed.
 
 ![heatmap](output_images/heatmap_test1.jpg)
 
