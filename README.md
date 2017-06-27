@@ -163,13 +163,13 @@ regions of interest.
 ![midway-far](output_images/windows_found_midway-far.jpg)
 ![far](output_images/windows_found_far.jpg)
 
-The car is detected in the midway ROIs as one would expect, it is not detected in the near and far ROIs.
-Our intuition of using different ROIs holds good.
+The car is detected in the midway ROIs as one would expect, it is not detected in the far ROI.
+Our intuition of using different ROIs holds good. In these frames there are quite a false positives, these are handled later.
 After combining the ROIs we get
 
 ![test9](output_images/windows_annotated_test9.jpg)
 
-Multiple cars are identified well.
+Multiple cars are also identified well.
 
 ![test4](output_images/windows_annotated_test4.jpg)
 
