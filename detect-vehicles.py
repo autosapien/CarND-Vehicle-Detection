@@ -672,7 +672,7 @@ if viz:
     save_windows_on_image_to_file(windows, img5, "output_images/windows_annotated_test9.jpg")
 
 
-if False:
+if True:
     centroids_history = []
     prev_bboxes = []
     in_vid = 'project_video.mp4'
