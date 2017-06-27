@@ -273,17 +273,19 @@ The final video with the cars annotated can be [found here](processed_project_vi
 
 ## Discussion
 
-- We could extract the HOG features for the whole source image at once do and then slide windows over it to improve efficiency.
-- Significant improvements in identifying vehicles can be made if we know that the road is curving right or left. 
-The region of interest can modified based on the curvature of the road. This would lead to reduced sizes of ROIs and 
-it would handle the identification of cars across the divider. 
-This solution already provides support for x axis cropping in the ROIs
-- This solution does not suffer from false positives but these can be further reduced by increasing the number of frames 
-where the centroid history is stored. We are using 5 (with 3+ votes) here, using 10 (with 6+ votes) should solve this problem 
-as false positives show up for only a few frames
+- We could extract the HOG features for the whole source image at one go and then slide windows over it to improve efficiency.
+- Significant improvements in identifying vehicles can be made if we know that the road curvature. 
+The region of interest can be modified based on this curvature. This would lead to reduced sizes of ROIs and 
+it would also handle the identification of cars across the divider. 
+Our solution already provides support for x axis cropping in the ROIs.
+- Our solution does not suffer from false positives but these can be further reduced by increasing the number of frames 
+where the centroid history is stored. We are using 5 (with 3+ votes) here. Wsing 10 (with 6+ votes) should solve this problem 
+as false positives show up for only a few frames.
 - Once the centroid on a car is found we could get a much better bound on the car by finding its color and then looking for a 
 bounding box with that color and saturation (cars tend to have high saturation as they are painted)
 - This method may not work realtime input as it handles about 1 frame per second. We would need to optimize the performance to get at least
 16 frames / sec to be able to handle realtime data.
 - It would be interesting to compare a deep learning approach with this approach. The deep learning approach may take longer to 
 train but should be considerably faster on detecting images,
+- This solution may not directly work on cars at night. But finding such a solution should be simple as there are rules
+regarding the color and lamps in car tail lights.

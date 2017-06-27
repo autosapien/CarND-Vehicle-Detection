@@ -133,12 +133,10 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
 
         if spatial_feat == True:
             spatial_features = bin_spatial(feature_image, size=spatial_size)
-            print("spacial features length", len(spatial_features))
             file_features.append(spatial_features)
         if hist_feat == True:
             # Apply color_hist()
             hist_features = color_hist(feature_image, nbins=hist_bins)
-            print("hist features length", len(hist_features))
             file_features.append(hist_features)
         if hog_feat == True:
             # Call get_hog_features() with vis=False, feature_vec=True
@@ -152,7 +150,6 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
             else:
                 hog_features = get_hog_features(feature_image[:, :, hog_channel], orient,
                                                 pix_per_cell, cell_per_block, vis=False, feature_vec=True)
-                print("hog features length", len(hog_features))
 
             # Append the new feature vector to the features list
             file_features.append(hog_features)
@@ -468,7 +465,7 @@ def annotate_cars(image):
 
 output_dir = '../output_images/'
 viz = True
-classify = False
+classify = True
 colorspace = 'LUV'
 hog_channel = 0  # 0,1,2
 orient = 9
@@ -530,25 +527,17 @@ if viz:
 
 # Define the feature vector
 if classify:
-    car_features = extract_features(cars[0:1], color_space=colorspace, orient=orient,
+    car_features = extract_features(cars, color_space=colorspace, orient=orient,
                                     pix_per_cell=pix_per_cell, cell_per_block=cell_per_block,
                                     hist_feat=True, spatial_feat=True,  hog_channel=hog_channel)
-    notcar_features = extract_features(notcars[0:0], color_space=colorspace, orient=orient,
+    notcar_features = extract_features(notcars, color_space=colorspace, orient=orient,
                                        pix_per_cell=pix_per_cell, cell_per_block=cell_per_block,
                                        hist_feat=True, spatial_feat=True, hog_channel=hog_channel)
-    #X = np.vstack((car_features, notcar_features)).astype(np.float64)
-    X = np.vstack(car_features).astype(np.float64)
+    X = np.vstack((car_features, notcar_features)).astype(np.float64)
 
     # Normalize the feature vectors
     scaler = StandardScaler().fit(X)
     scaled_X = scaler.transform(X)
-
-    if viz:
-        idx = np.random.randint(0, 1)
-        plot_feature_vectors(cars[idx], X[idx], scaled_X[idx], 'output_images/normalized_feature_vector.jpg')
-    exit(0)
-
-
 
     # Define the labels vector
     y = np.hstack((np.ones(len(car_features)), np.zeros(len(notcar_features))))
@@ -626,12 +615,12 @@ wsoi = [
     'viz_file': 'test_images/test8.jpg'
 }]
 
-if False:
+if viz:
     draw_regions_of_interest(wsoi)
     draw_windows_grid_for_regions_of_interest(wsoi)
 
 
-if False:
+if viz:
     img1 = cv2.cvtColor(cv2.imread('test_images/test1.jpg'), cv2.COLOR_BGR2RGB)
     img1 = img1.astype(np.float32) / 255  # Training data was png, this is jpeg
     img1_rsoi = get_regions_of_interest(img1, wsoi)
@@ -670,11 +659,11 @@ if False:
     save_windows_on_image_to_file(windows, img5, "output_images/windows_annotated_test9.jpg")
 
 
-if True:
+if not viz:
     centroids_history = []
     prev_bboxes = []
     in_vid = 'project_video.mp4'
     out_vid = 'processed_' + in_vid.split('/')[-1]
-    clip = VideoFileClip(in_vid).subclip(39,49)
+    clip = VideoFileClip(in_vid)
     annotated_clip = clip.fl_image(annotate_cars)
     annotated_clip.write_videofile(out_vid, audio=False)
